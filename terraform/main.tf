@@ -1,4 +1,3 @@
-# Hosting Platform Infrastructure
 terraform {
   required_version = ">= 1.0"
 
