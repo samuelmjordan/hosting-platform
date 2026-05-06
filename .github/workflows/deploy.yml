@@ -1,0 +1,175 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'terraform/**'
+      - '*.md'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+
+  build:
+    name: Build Images
+    runs-on: ubuntu-latest
+    needs: changes
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      backend_tag: ${{ steps.tags.outputs.backend_tag }}
+      frontend_tag: ${{ steps.tags.outputs.frontend_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push backend
+        if: needs.changes.outputs.backend == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/backend:${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}/backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push frontend
+        if: needs.changes.outputs.frontend == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/frontend:${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}/frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Determine image tags
+        id: tags
+        run: |
+          if [[ "${{ needs.changes.outputs.backend }}" == "true" ]]; then
+            echo "backend_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "backend_tag=latest" >> $GITHUB_OUTPUT
+          fi
+
+          if [[ "${{ needs.changes.outputs.frontend }}" == "true" ]]; then
+            echo "frontend_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "frontend_tag=latest" >> $GITHUB_OUTPUT
+          fi
+
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    needs: build
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7"
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        env:
+          TF_VAR_hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_allowed_ssh_cidrs: ${{ secrets.ALLOWED_SSH_CIDRS }}
+          TF_VAR_ghcr_username: ${{ github.repository_owner }}
+          TF_VAR_ghcr_token: ${{ secrets.GHCR_TOKEN }}
+        run: terraform init
+
+      - name: Get Server IP
+        id: server
+        env:
+          TF_VAR_hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_allowed_ssh_cidrs: ${{ secrets.ALLOWED_SSH_CIDRS }}
+          TF_VAR_ghcr_username: ${{ github.repository_owner }}
+          TF_VAR_ghcr_token: ${{ secrets.GHCR_TOKEN }}
+        run: |
+          SERVER_IP=$(terraform output -raw server_ip)
+          echo "ip=$SERVER_IP" >> $GITHUB_OUTPUT
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ steps.server.outputs.ip }} >> ~/.ssh/known_hosts
+
+      - name: Prepare docker-compose.yml with image tags
+        working-directory: ${{ github.workspace }}
+        run: |
+          # Substitute image tags in docker-compose.yml
+          sed -i 's|build:|# build:|g' docker-compose.yml
+          sed -i 's|context: ./backend|# context: ./backend|g' docker-compose.yml
+          sed -i 's|context: ./frontend|# context: ./frontend|g' docker-compose.yml
+          sed -i 's|dockerfile: Dockerfile|# dockerfile: Dockerfile|g' docker-compose.yml
+
+          # Add image references for backend
+          sed -i '/services:/,/backend:/{/backend:/a\    image: ${{ env.IMAGE_PREFIX }}/backend:${{ needs.build.outputs.backend_tag }}
+          }' docker-compose.yml
+
+          # Add image references for frontend
+          sed -i '/frontend:/,/ports:/{/frontend:/a\    image: ${{ env.IMAGE_PREFIX }}/frontend:${{ needs.build.outputs.frontend_tag }}
+          }' docker-compose.yml
+
+      - name: Copy files to server
+        working-directory: ${{ github.workspace }}
+        run: |
+          scp -o StrictHostKeyChecking=no docker-compose.yml root@${{ steps.server.outputs.ip }}:/opt/app/
+          scp -o StrictHostKeyChecking=no .env.prod root@${{ steps.server.outputs.ip }}:/opt/app/.env 2>/dev/null || echo "No .env.prod found, skipping"
+          scp -r -o StrictHostKeyChecking=no nginx root@${{ steps.server.outputs.ip }}:/opt/app/
+
+      - name: Deploy
+        run: |
+          ssh -o StrictHostKeyChecking=no root@${{ steps.server.outputs.ip }} << 'EOF'
+            cd /opt/app
+            docker compose pull
+            docker compose up -d --remove-orphans
+          EOF
