@@ -22,12 +22,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Debug - Check if secret exists
+      - name: Debug - Check secrets
         run: |
-          if [ -n "${{ secrets.TF_API_TOKEN }}" ]; then
-            echo "TF_API_TOKEN secret is set (length: ${#TF_TOKEN_app_terraform_io})"
+          echo "Checking TF_API_TOKEN..."
+          if [ -z "${{ secrets.TF_API_TOKEN }}" ]; then
+            echo "TF_API_TOKEN is EMPTY"
           else
-            echo "TF_API_TOKEN secret is NOT set or empty"
+            echo "TF_API_TOKEN is SET"
+          fi
+          echo "Checking GITHUB_TOKEN..."
+          if [ -z "${{ secrets.GITHUB_TOKEN }}" ]; then
+            echo "GITHUB_TOKEN is EMPTY"
+          else
+            echo "GITHUB_TOKEN is SET (this should always work)"
           fi
 
       - name: Setup Terraform
