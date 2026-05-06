@@ -1,6 +1,10 @@
-.PHONY: dev test build clean
+.PHONY: dev test build clean up down logs
 
-# Development - runs both services locally
+# Environment (default: local)
+ENV ?= local
+ENV_FILE := .env.$(ENV)
+
+# Development - runs both services locally (no Docker)
 dev:
 	@echo "Starting development servers..."
 	$(MAKE) -j2 dev-backend dev-frontend
@@ -20,21 +24,47 @@ test:
 
 # Build Docker images
 build:
-	docker compose build
+	docker compose --env-file $(ENV_FILE) build
 
 # Start all services with Docker Compose
 up:
-	docker compose up -d
+	@echo "Starting services with $(ENV_FILE)..."
+	docker compose --env-file $(ENV_FILE) up -d
 
 # Stop all services
 down:
-	docker compose down
+	docker compose --env-file $(ENV_FILE) down
 
 # View logs
 logs:
-	docker compose logs -f
+	docker compose --env-file $(ENV_FILE) logs -f
 
 # Clean build artifacts
 clean:
 	cd backend && ./mvnw clean
 	cd frontend && rm -rf .next node_modules
+
+# Shortcuts for environments
+up-local:
+	$(MAKE) up ENV=local
+
+up-prod:
+	$(MAKE) up ENV=prod
+
+build-local:
+	$(MAKE) build ENV=local
+
+build-prod:
+	$(MAKE) build ENV=prod
+
+down-local:
+	$(MAKE) down ENV=local
+
+down-prod:
+	$(MAKE) down ENV=prod
+
+logs-local:
+	$(MAKE) logs ENV=local
+
+logs-prod:
+	$(MAKE) logs ENV=prod

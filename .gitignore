@@ -10,6 +10,7 @@ Thumbs.db
 # Environment
 .env
 .env.local
+.env.prod
 .env.*.local
 
 # Logs
