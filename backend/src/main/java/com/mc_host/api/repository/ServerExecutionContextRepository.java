@@ -1,0 +1,204 @@
+package com.mc_host.api.repository;
+
+import com.mc_host.api.model.provisioning.Context;
+import com.mc_host.api.model.provisioning.Mode;
+import com.mc_host.api.model.provisioning.Status;
+import com.mc_host.api.model.provisioning.StepType;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Optional;
+import java.util.UUID;
+
+@Service
+public class ServerExecutionContextRepository extends BaseRepository {
+
+    public ServerExecutionContextRepository(JdbcTemplate jdbc) { super(jdbc); }
+
+    public void upsertSubscription(Context context) {
+        upsert("""
+           INSERT INTO server_execution_context_ (
+               subscription_id,
+               step_type,
+               mode,
+               execution_status,
+               server_key,
+               title,
+               caption,
+               hetzner_node_id,
+               a_record_id,
+               pterodactyl_node_id,
+               allocation_id,
+               pterodactyl_server_id,
+               c_name_record_id,
+               new_hetzner_node_id,
+               new_a_record_id,
+               new_pterodactyl_node_id,
+               new_allocation_id,
+               new_pterodactyl_server_id,
+               new_c_name_record_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT (subscription_id) DO UPDATE SET
+               step_type = EXCLUDED.step_type,
+               mode = EXCLUDED.mode,
+               execution_status = EXCLUDED.execution_status,
+               server_key = EXCLUDED.server_key,
+               title = EXCLUDED.title,
+               caption = EXCLUDED.caption,
+               hetzner_node_id = EXCLUDED.hetzner_node_id,
+               a_record_id = EXCLUDED.a_record_id,
+               pterodactyl_node_id = EXCLUDED.pterodactyl_node_id,
+               allocation_id = EXCLUDED.allocation_id,
+               pterodactyl_server_id = EXCLUDED.pterodactyl_server_id,
+               c_name_record_id = EXCLUDED.c_name_record_id,
+               new_hetzner_node_id = EXCLUDED.new_hetzner_node_id,
+               new_a_record_id = EXCLUDED.new_a_record_id,
+               new_pterodactyl_node_id = EXCLUDED.new_pterodactyl_node_id,
+               new_allocation_id = EXCLUDED.new_allocation_id,
+               new_pterodactyl_server_id = EXCLUDED.new_pterodactyl_server_id,
+               new_c_name_record_id = EXCLUDED.new_c_name_record_id
+           """, ps -> setContextParams(ps, context));
+    }
+
+    public void insertOrIgnoreSubscription(Context context) {
+        upsert("""
+           INSERT INTO server_execution_context_ (
+               subscription_id,
+               step_type, mode,
+               execution_status,
+               server_key,
+               title,
+               caption,
+               hetzner_node_id,
+               a_record_id,
+               pterodactyl_node_id,
+               allocation_id,
+               pterodactyl_server_id,
+               c_name_record_id,
+               new_hetzner_node_id,
+               new_a_record_id,
+               new_pterodactyl_node_id,
+               new_allocation_id,
+               new_pterodactyl_server_id,
+               new_c_name_record_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT (subscription_id) DO NOTHING
+           """, ps -> setContextParams(ps, context));
+    }
+
+    public void updateSubscription(Context context) {
+        upsert("""
+           UPDATE server_execution_context_ SET
+               step_type = ?,
+               mode = ?,
+               execution_status = ?,
+               server_key = ?,
+               title = ?,
+               caption = ?,
+               hetzner_node_id = ?,
+               a_record_id = ?,
+               pterodactyl_node_id = ?,
+               allocation_id = ?,
+               pterodactyl_server_id = ?,
+               c_name_record_id = ?,
+               new_hetzner_node_id = ?,
+               new_a_record_id = ?,
+               new_pterodactyl_node_id = ?,
+               new_allocation_id = ?,
+               new_pterodactyl_server_id = ?,
+               new_c_name_record_id = ?
+           WHERE subscription_id = ?
+           """, ps -> {
+            setContextParams(ps, context);
+            ps.setString(19, context.getSubscriptionId()); // for WHERE clause
+        });
+    }
+
+    public Optional<Context> selectSubscription(String subId) {
+        return selectOne("""
+           SELECT
+           subscription_id,
+           step_type, mode,
+           execution_status,
+           server_key,
+           title,
+           caption,
+           hetzner_node_id,
+           a_record_id,
+           pterodactyl_node_id,
+           allocation_id,
+           pterodactyl_server_id,
+           c_name_record_id,
+           new_hetzner_node_id,
+           new_a_record_id,
+           new_pterodactyl_node_id,
+           new_allocation_id,
+           new_pterodactyl_server_id,
+           new_c_name_record_id
+           FROM server_execution_context_ WHERE subscription_id = ?
+           """,
+            this::mapContext,
+            subId
+        );
+    }
+
+    public void updateTitle(String subId, String title) {
+        execute("UPDATE server_execution_context_ SET title = ? WHERE subscription_id = ?", title, subId);
+    }
+
+    public void updateCaption(String subId, String caption) {
+        execute("UPDATE server_execution_context_ SET caption = ? WHERE subscription_id = ?", caption, subId);
+    }
+
+    public void newServerKey(String subId) {
+        execute("UPDATE server_execution_context_ SET server_key = ? WHERE subscription_id = ?", UUID.randomUUID().toString(), subId);
+    }
+
+    private void setContextParams(PreparedStatement ps, Context context) throws SQLException {
+        ps.setString(1, context.getSubscriptionId());
+        ps.setString(2, context.getStepType().name());
+        ps.setString(3, context.getMode().name());
+        ps.setString(4, context.getStatus().name());
+        ps.setString(5, context.getServerKey());
+        ps.setString(6, context.getTitle());
+        ps.setString(7, context.getCaption());
+        ps.setObject(8, context.getNodeId());
+        ps.setString(9, context.getARecordId());
+        ps.setObject(10, context.getPterodactylNodeId());
+        ps.setObject(11, context.getAllocationId());
+        ps.setObject(12, context.getPterodactylServerId());
+        ps.setObject(13, context.getCNameRecordId());
+        ps.setObject(14, context.getNewNodeId());
+        ps.setString(15, context.getNewARecordId());
+        ps.setObject(16, context.getNewPterodactylNodeId());
+        ps.setObject(17, context.getNewAllocationId());
+        ps.setObject(18, context.getNewPterodactylServerId());
+        ps.setObject(19, context.getNewCNameRecordId());
+    }
+
+    private Context mapContext(ResultSet rs, int rowNum) throws SQLException {
+        return new Context(
+            rs.getString("subscription_id"),
+            StepType.valueOf(rs.getString("step_type")),
+            Mode.valueOf(rs.getString("mode")),
+            Status.valueOf(rs.getString("execution_status")),
+            rs.getString("title"),
+            rs.getString("caption"),
+            rs.getString("server_key"),
+            (Long) rs.getObject("hetzner_node_id"),
+            rs.getString("a_record_id"),
+            (Long) rs.getObject("pterodactyl_node_id"),
+            (Long) rs.getObject("allocation_id"),
+            (Long) rs.getObject("pterodactyl_server_id"),
+            rs.getString("c_name_record_id"),
+            (Long) rs.getObject("new_hetzner_node_id"),
+            rs.getString("new_a_record_id"),
+            (Long) rs.getObject("new_pterodactyl_node_id"),
+            (Long) rs.getObject("new_allocation_id"),
+            (Long) rs.getObject("new_pterodactyl_server_id"),
+            rs.getString("new_c_name_record_id"));
+    }
+}
