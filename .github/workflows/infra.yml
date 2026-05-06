@@ -3,7 +3,7 @@ name: Infrastructure
 on:
   push:
     paths:
-      - 'terraform/**'
+      - "terraform/**"
     branches:
       - main
   workflow_dispatch:
@@ -16,7 +16,7 @@ jobs:
       run:
         working-directory: terraform
     env:
-      TF_CLOUD_ORGANIZATION: samuelmjordan
+      TF_CLOUD_ORGANIZATION: axolhost
       TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
       TF_VAR_hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
       TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
