@@ -145,26 +145,33 @@ jobs:
       - name: Prepare docker-compose.yml with image tags
         working-directory: ${{ github.workspace }}
         run: |
-          # Substitute image tags in docker-compose.yml
-          sed -i 's|build:|# build:|g' docker-compose.yml
-          sed -i 's|context: ./backend|# context: ./backend|g' docker-compose.yml
-          sed -i 's|context: ./frontend|# context: ./frontend|g' docker-compose.yml
-          sed -i 's|dockerfile: Dockerfile|# dockerfile: Dockerfile|g' docker-compose.yml
+          # Comment out build directives and add image references
+          cat docker-compose.yml | \
+            sed 's|^\(\s*\)build:|#\1build:|g' | \
+            sed 's|^\(\s*\)context:.*|#&|g' | \
+            sed 's|^\(\s*\)dockerfile:.*|#&|g' > docker-compose.prod.yml
 
-          # Add image references for backend
-          sed -i '/services:/,/backend:/{/backend:/a\    image: ${{ env.IMAGE_PREFIX }}/backend:${{ needs.build.outputs.backend_tag }}
-          }' docker-compose.yml
+          # Add image tag for backend service
+          sed -i '/^\s*backend:/a\    image: ${{ env.IMAGE_PREFIX }}/backend:${{ needs.build.outputs.backend_tag }}' docker-compose.prod.yml
 
-          # Add image references for frontend
-          sed -i '/frontend:/,/ports:/{/frontend:/a\    image: ${{ env.IMAGE_PREFIX }}/frontend:${{ needs.build.outputs.frontend_tag }}
-          }' docker-compose.yml
+          # Add image tag for frontend service
+          sed -i '/^\s*frontend:/a\    image: ${{ env.IMAGE_PREFIX }}/frontend:${{ needs.build.outputs.frontend_tag }}' docker-compose.prod.yml
+
+          mv docker-compose.prod.yml docker-compose.yml
 
       - name: Copy files to server
         working-directory: ${{ github.workspace }}
         run: |
+          # Copy docker-compose and monitoring configs
           scp -o StrictHostKeyChecking=no docker-compose.yml root@${{ steps.server.outputs.ip }}:/opt/app/
-          scp -o StrictHostKeyChecking=no .env.prod root@${{ steps.server.outputs.ip }}:/opt/app/.env 2>/dev/null || echo "No .env.prod found, skipping"
-          scp -r -o StrictHostKeyChecking=no nginx root@${{ steps.server.outputs.ip }}:/opt/app/
+          scp -r -o StrictHostKeyChecking=no monitoring root@${{ steps.server.outputs.ip }}:/opt/app/
+
+          # Copy env file if it exists (for first deployment)
+          if [ -f .env.prod ]; then
+            ssh -o StrictHostKeyChecking=no root@${{ steps.server.outputs.ip }} '[ ! -f /opt/app/.env ]' && \
+              scp -o StrictHostKeyChecking=no .env.prod root@${{ steps.server.outputs.ip }}:/opt/app/.env || \
+              echo ".env already exists on server, skipping"
+          fi
 
       - name: Deploy
         run: |
