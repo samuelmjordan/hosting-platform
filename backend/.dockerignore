@@ -1,0 +1,13 @@
+.git
+.gitignore
+.idea
+.settings
+.classpath
+.project
+.factorypath
+target
+*.log
+*.md
+.env
+.claude
+compose.yml
