@@ -8,13 +8,6 @@ on:
       - main
   workflow_dispatch:
 
-env:
-  TF_VAR_hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
-  TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
-  TF_VAR_allowed_ssh_cidrs: ${{ secrets.ALLOWED_SSH_CIDRS }}
-  TF_VAR_ghcr_username: ${{ github.repository_owner }}
-  TF_VAR_ghcr_token: ${{ secrets.GHCR_TOKEN }}
-
 jobs:
   terraform:
     name: Terraform Apply
@@ -22,6 +15,14 @@ jobs:
     defaults:
       run:
         working-directory: terraform
+    env:
+      TF_CLOUD_ORGANIZATION: samuelmjordan
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+      TF_VAR_hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+      TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+      TF_VAR_allowed_ssh_cidrs: ${{ secrets.ALLOWED_SSH_CIDRS }}
+      TF_VAR_ghcr_username: ${{ github.repository_owner }}
+      TF_VAR_ghcr_token: ${{ secrets.GHCR_TOKEN }}
 
     steps:
       - name: Checkout
@@ -30,7 +31,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.7"
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
       - name: Terraform Init
         run: terraform init
@@ -42,7 +43,7 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        run: terraform plan -out=tfplan
+        run: terraform plan
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -auto-approve
