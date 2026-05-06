@@ -22,8 +22,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Debug - Check if secret exists
+        run: |
+          if [ -n "${{ secrets.TF_API_TOKEN }}" ]; then
+            echo "TF_API_TOKEN secret is set (length: ${#TF_TOKEN_app_terraform_io})"
+          else
+            echo "TF_API_TOKEN secret is NOT set or empty"
+          fi
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+
+      - name: Setup Terraform Cloud credentials
+        run: |
+          mkdir -p ~/.terraform.d
+          cat > ~/.terraform.d/credentials.tfrc.json << EOF
+          {
+            "credentials": {
+              "app.terraform.io": {
+                "token": "${{ secrets.TF_API_TOKEN }}"
+              }
+            }
+          }
+          EOF
 
       - name: Terraform Init
         run: terraform init
