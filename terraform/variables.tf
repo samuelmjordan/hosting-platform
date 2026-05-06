@@ -12,7 +12,7 @@ variable "ssh_public_key" {
 variable "allowed_ssh_cidrs" {
   description = "List of CIDR blocks allowed to SSH into the server"
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+  default     = ["0.0.0.0/0", "::/0"]
 }
 
 variable "ghcr_username" {
