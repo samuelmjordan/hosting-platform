@@ -189,6 +189,7 @@ jobs:
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           # Secrets
+          CF_DNS_API_TOKEN: ${{ secrets.CF_DNS_API_TOKEN }}
           TRAEFIK_AUTH: ${{ secrets.TRAEFIK_AUTH }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
