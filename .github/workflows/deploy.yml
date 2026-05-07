@@ -179,6 +179,7 @@ jobs:
         env:
           # Infrastructure
           DOMAIN: ${{ vars.DOMAIN }}
+          PUBLIC_DOMAIN: ${{ vars.PUBLIC_DOMAIN }}
           ACME_EMAIL: ${{ vars.ACME_EMAIL }}
           TRAEFIK_AUTH: ${{ secrets.TRAEFIK_AUTH }}
           CF_DNS_API_TOKEN: ${{ secrets.CF_DNS_API_TOKEN }}
