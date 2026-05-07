@@ -162,7 +162,9 @@ jobs:
           cat docker-compose.yml | \
             sed 's|^\(\s*\)build:|#\1build:|g' | \
             sed 's|^\(\s*\)context:.*|#&|g' | \
-            sed 's|^\(\s*\)dockerfile:.*|#&|g' > docker-compose.prod.yml
+            sed 's|^\(\s*\)dockerfile:.*|#&|g' | \
+            sed 's|^\(\s*\)args:|#&|g' | \
+            sed 's|^\(\s*\)NEXT_PUBLIC_.*:.*|#&|g' > docker-compose.prod.yml
 
           # Add image tag for backend service
           sed -i '/^\s*backend:/a\    image: ${{ env.IMAGE_PREFIX }}/backend:${{ needs.build.outputs.backend_tag }}' docker-compose.prod.yml
