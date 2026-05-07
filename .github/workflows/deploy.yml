@@ -231,7 +231,9 @@ jobs:
             # Extract key and get value from environment
             key=$(echo "$line" | cut -d'=' -f1)
             value="${!key}"
-            echo "$key=$value" >> .env
+            # Escape double quotes and wrap in quotes for multi-line/special char safety
+            escaped_value="${value//\"/\\\"}"
+            echo "$key=\"$escaped_value\"" >> .env
           done < .env.example
 
       - name: Copy files to server
