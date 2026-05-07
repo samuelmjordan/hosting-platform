@@ -59,8 +59,24 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Check if images exist
+        id: check_images
+        run: |
+          # Check if backend:latest exists
+          if docker manifest inspect ${{ env.IMAGE_PREFIX }}/backend:latest > /dev/null 2>&1; then
+            echo "backend_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "backend_exists=false" >> $GITHUB_OUTPUT
+          fi
+          # Check if frontend:latest exists
+          if docker manifest inspect ${{ env.IMAGE_PREFIX }}/frontend:latest > /dev/null 2>&1; then
+            echo "frontend_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "frontend_exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build and push backend
-        if: needs.changes.outputs.backend == 'true'
+        if: needs.changes.outputs.backend == 'true' || steps.check_images.outputs.backend_exists == 'false'
         uses: docker/build-push-action@v5
         with:
           context: ./backend
@@ -74,7 +90,7 @@ jobs:
             sentry_token=${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: Build and push frontend
-        if: needs.changes.outputs.frontend == 'true'
+        if: needs.changes.outputs.frontend == 'true' || steps.check_images.outputs.frontend_exists == 'false'
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
@@ -88,13 +104,14 @@ jobs:
       - name: Determine image tags
         id: tags
         run: |
-          if [[ "${{ needs.changes.outputs.backend }}" == "true" ]]; then
+          # Use sha tag if image was built (changed or didn't exist)
+          if [[ "${{ needs.changes.outputs.backend }}" == "true" ]] || [[ "${{ steps.check_images.outputs.backend_exists }}" == "false" ]]; then
             echo "backend_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
           else
             echo "backend_tag=latest" >> $GITHUB_OUTPUT
           fi
 
-          if [[ "${{ needs.changes.outputs.frontend }}" == "true" ]]; then
+          if [[ "${{ needs.changes.outputs.frontend }}" == "true" ]] || [[ "${{ steps.check_images.outputs.frontend_exists }}" == "false" ]]; then
             echo "frontend_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
           else
             echo "frontend_tag=latest" >> $GITHUB_OUTPUT
