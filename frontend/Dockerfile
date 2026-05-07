@@ -2,6 +2,10 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
+# Build-time environment variables (NEXT_PUBLIC_ vars are baked into the bundle)
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+
 # Copy package files
 COPY package.json package-lock.json ./
 

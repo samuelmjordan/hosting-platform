@@ -100,6 +100,9 @@ jobs:
             ${{ env.IMAGE_PREFIX }}/frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ vars.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
 
       - name: Determine image tags
         id: tags
@@ -184,6 +187,7 @@ jobs:
           PTERODACTYL_TIMEZONE: ${{ vars.PTERODACTYL_TIMEZONE }}
           PTERODACTYL_EMAIL: ${{ vars.PTERODACTYL_EMAIL }}
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           # Secrets
           TRAEFIK_AUTH: ${{ secrets.TRAEFIK_AUTH }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
