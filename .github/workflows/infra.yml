@@ -12,6 +12,7 @@ jobs:
   terraform:
     name: Terraform Apply
     runs-on: ubuntu-latest
+    environment: Production
     defaults:
       run:
         working-directory: terraform
@@ -22,36 +23,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Debug - Check secrets
-        run: |
-          echo "Checking TF_API_TOKEN..."
-          if [ -z "${{ secrets.TF_API_TOKEN }}" ]; then
-            echo "TF_API_TOKEN is EMPTY"
-          else
-            echo "TF_API_TOKEN is SET"
-          fi
-          echo "Checking GITHUB_TOKEN..."
-          if [ -z "${{ secrets.GITHUB_TOKEN }}" ]; then
-            echo "GITHUB_TOKEN is EMPTY"
-          else
-            echo "GITHUB_TOKEN is SET (this should always work)"
-          fi
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-
-      - name: Setup Terraform Cloud credentials
-        run: |
-          mkdir -p ~/.terraform.d
-          cat > ~/.terraform.d/credentials.tfrc.json << EOF
-          {
-            "credentials": {
-              "app.terraform.io": {
-                "token": "${{ secrets.TF_API_TOKEN }}"
-              }
-            }
-          }
-          EOF
 
       - name: Terraform Init
         run: terraform init
