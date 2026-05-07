@@ -152,23 +152,53 @@ jobs:
 
           mv docker-compose.prod.yml docker-compose.yml
 
+      - name: Create .env file from .env.example
+        working-directory: ${{ github.workspace }}
+        env:
+          # Variables
+          DOMAIN: ${{ vars.DOMAIN }}
+          ACME_EMAIL: ${{ vars.ACME_EMAIL }}
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+          MYSQL_DATABASE: ${{ vars.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ vars.MYSQL_USER }}
+          GRAFANA_ADMIN_USER: ${{ vars.GRAFANA_ADMIN_USER }}
+          PTERODACTYL_URL: ${{ vars.PTERODACTYL_URL }}
+          PTERODACTYL_TIMEZONE: ${{ vars.PTERODACTYL_TIMEZONE }}
+          PTERODACTYL_EMAIL: ${{ vars.PTERODACTYL_EMAIL }}
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          # Secrets
+          TRAEFIK_AUTH: ${{ secrets.TRAEFIK_AUTH }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+        run: |
+          # Read keys from .env.example and populate values from environment
+          while IFS= read -r line; do
+            # Preserve comments and empty lines
+            if [[ "$line" =~ ^#.*$ ]] || [[ -z "$line" ]]; then
+              echo "$line" >> .env
+              continue
+            fi
+            # Extract key and get value from environment
+            key=$(echo "$line" | cut -d'=' -f1)
+            value="${!key}"
+            echo "$key=$value" >> .env
+          done < .env.example
+
       - name: Copy files to server
         working-directory: ${{ github.workspace }}
         run: |
-          # Copy docker-compose and monitoring configs
+          # Copy docker-compose, env, and monitoring configs
           scp -o StrictHostKeyChecking=no docker-compose.yml root@${{ steps.server.outputs.ip }}:/opt/app/
+          scp -o StrictHostKeyChecking=no .env root@${{ steps.server.outputs.ip }}:/opt/app/
           scp -r -o StrictHostKeyChecking=no monitoring root@${{ steps.server.outputs.ip }}:/opt/app/
-
-          # Copy env file if it exists (for first deployment)
-          if [ -f .env.prod ]; then
-            ssh -o StrictHostKeyChecking=no root@${{ steps.server.outputs.ip }} '[ ! -f /opt/app/.env ]' && \
-              scp -o StrictHostKeyChecking=no .env.prod root@${{ steps.server.outputs.ip }}:/opt/app/.env || \
-              echo ".env already exists on server, skipping"
-          fi
 
       - name: Deploy
         run: |
-          ssh -o StrictHostKeyChecking=no root@${{ steps.server.outputs.ip }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no root@${{ steps.server.outputs.ip }} << EOF
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             cd /opt/app
             docker compose pull
             docker compose up -d --remove-orphans
