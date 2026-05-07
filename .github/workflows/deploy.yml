@@ -175,26 +175,51 @@ jobs:
       - name: Create .env file from .env.example
         working-directory: ${{ github.workspace }}
         env:
-          # Variables
+          # Infrastructure
           DOMAIN: ${{ vars.DOMAIN }}
           ACME_EMAIL: ${{ vars.ACME_EMAIL }}
+          TRAEFIK_AUTH: ${{ secrets.TRAEFIK_AUTH }}
+          CF_DNS_API_TOKEN: ${{ secrets.CF_DNS_API_TOKEN }}
+          # Databases
           POSTGRES_DB: ${{ vars.POSTGRES_DB }}
           POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           MYSQL_DATABASE: ${{ vars.MYSQL_DATABASE }}
           MYSQL_USER: ${{ vars.MYSQL_USER }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          # Monitoring
           GRAFANA_ADMIN_USER: ${{ vars.GRAFANA_ADMIN_USER }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          # Pterodactyl Panel
           PTERODACTYL_URL: ${{ vars.PTERODACTYL_URL }}
           PTERODACTYL_TIMEZONE: ${{ vars.PTERODACTYL_TIMEZONE }}
           PTERODACTYL_EMAIL: ${{ vars.PTERODACTYL_EMAIL }}
+          PANEL_SECRET_KEY: ${{ secrets.PANEL_SECRET_KEY }}
+          PANEL_ADMIN_CLIENT_SECRET_KEY: ${{ secrets.PANEL_ADMIN_CLIENT_SECRET_KEY }}
+          PANEL_ADMIN_USER: ${{ vars.PANEL_ADMIN_USER }}
+          PANEL_ADMIN_PASSWORD: ${{ secrets.PANEL_ADMIN_PASSWORD }}
+          # External APIs
+          CLOUDFLARE_SECRET_KEY: ${{ secrets.CLOUDFLARE_SECRET_KEY }}
+          CLOUDFLARE_ORIGIN_CERTIFICATE: ${{ secrets.CLOUDFLARE_ORIGIN_CERTIFICATE }}
+          CLOUDFLARE_CERTIFICATE_PRIVATE_KEY: ${{ secrets.CLOUDFLARE_CERTIFICATE_PRIVATE_KEY }}
+          HETZNER_SECRET_KEY: ${{ secrets.HETZNER_SECRET_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_SECRET_SIGNING_KEY: ${{ secrets.STRIPE_SECRET_SIGNING_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          CLERK_SECRET_SIGNING_KEY: ${{ secrets.CLERK_SECRET_SIGNING_KEY }}
+          JWT_URL: ${{ vars.JWT_URL }}
+          # Application
+          ENV: ${{ vars.ENV }}
+          CLOUD_DOMAIN: ${{ vars.CLOUD_DOMAIN }}
+          INFRA_DOMAIN: ${{ vars.INFRA_DOMAIN }}
+          PASSWORD_KEY: ${{ secrets.PASSWORD_KEY }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+          # Frontend (build-time)
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          # Secrets
-          CF_DNS_API_TOKEN: ${{ secrets.CF_DNS_API_TOKEN }}
-          TRAEFIK_AUTH: ${{ secrets.TRAEFIK_AUTH }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
         run: |
           # Read keys from .env.example and populate values from environment
           while IFS= read -r line; do

@@ -40,9 +40,38 @@ services:
     expose:
       - "8080"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB}
-      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
-      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      # Database (host:port hardcoded in application.yaml as postgres:5432)
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      # Application
+      - ENV=${ENV:-production}
+      - CLOUD_DOMAIN=${CLOUD_DOMAIN}
+      - INFRA_DOMAIN=${INFRA_DOMAIN}
+      # Sentry
+      - SENTRY_DSN=${SENTRY_DSN}
+      # Cloudflare
+      - CLOUDFLARE_SECRET_KEY=${CLOUDFLARE_SECRET_KEY}
+      - CLOUDFLARE_ORIGIN_CERTIFICATE=${CLOUDFLARE_ORIGIN_CERTIFICATE}
+      - CLOUDFLARE_CERTIFICATE_PRIVATE_KEY=${CLOUDFLARE_CERTIFICATE_PRIVATE_KEY}
+      # Pterodactyl (host hardcoded in application.yaml as http://pterodactyl:80)
+      - PANEL_SECRET_KEY=${PANEL_SECRET_KEY}
+      - PANEL_ADMIN_CLIENT_SECRET_KEY=${PANEL_ADMIN_CLIENT_SECRET_KEY}
+      - PANEL_ADMIN_USER=${PANEL_ADMIN_USER}
+      - PANEL_ADMIN_PASSWORD=${PANEL_ADMIN_PASSWORD}
+      - PASSWORD_KEY=${PASSWORD_KEY}
+      # Hetzner
+      - HETZNER_SECRET_KEY=${HETZNER_SECRET_KEY}
+      # SSH
+      - SSH_PRIVATE_KEY=${SSH_PRIVATE_KEY}
+      - SSH_PUBLIC_KEY=${SSH_PUBLIC_KEY}
+      # Clerk
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - CLERK_SECRET_SIGNING_KEY=${CLERK_SECRET_SIGNING_KEY}
+      - JWT_URL=${JWT_URL}
+      # Stripe
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_SECRET_SIGNING_KEY=${STRIPE_SECRET_SIGNING_KEY}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`${DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/actuator/health`))"
@@ -65,7 +94,10 @@ services:
     expose:
       - "3000"
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      # Runtime vars for server-side API routes (NEXT_PUBLIC_* are baked at build time)
+      - API_URL=http://backend:8080
+      - PASSWORD_KEY=${PASSWORD_KEY}
+      - BASE_URL=https://${DOMAIN}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`${DOMAIN}`)"
