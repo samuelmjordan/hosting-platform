@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("egg")
+@RequestMapping("api/egg")
 public interface EggController {
 
 	@GetMapping
