@@ -3,6 +3,8 @@ import { fetchPlans } from '@/app/_services/public/planService';
 import { fetchServers } from '@/app/_services/protected/server/serverService';
 import { Plan, Server } from '@/app/types';
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardPage() {
   const servers: Server[] = await fetchServers();
   const plans: Plan[] = await fetchPlans('GAME_SERVER');

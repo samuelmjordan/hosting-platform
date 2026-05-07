@@ -3,6 +3,8 @@ import { fetchInvoices } from "@/app/_services/protected/server/invoiceService"
 import { fetchPaymentMethods } from "@/app/_services/protected/server/paymentMethodServerService"
 import { BillingPage } from "@/app/_components/page/billing/BillingPage"
 
+export const dynamic = 'force-dynamic';
+
 export default async function BillingRoute() {
   const servers = await fetchServers()
   const invoices = await fetchInvoices()

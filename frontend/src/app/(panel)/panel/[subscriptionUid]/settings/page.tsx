@@ -1,6 +1,8 @@
 import ServerSettings from "@/app/_components/page/settings/ServerSettings";
 import {fetchEggs} from "@/app/_services/public/eggService";
 
+export const dynamic = 'force-dynamic';
+
 type Params = {
   subscriptionUid: string;
 }
