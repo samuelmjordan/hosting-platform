@@ -11,7 +11,9 @@ RUN ./mvnw dependency:go-offline -B
 
 # Copy source and build
 COPY src ./src
-RUN ./mvnw package -DskipTests -B
+RUN --mount=type=secret,id=sentry_token \
+    SENTRY_AUTH_TOKEN=$(cat /run/secrets/sentry_token 2>/dev/null || echo "") \
+    ./mvnw package -DskipTests -B
 
 # Runtime stage
 FROM eclipse-temurin:21-jre
