@@ -52,7 +52,7 @@ resource "hcloud_firewall" "main" {
 resource "hcloud_server" "main" {
   name        = "hosting-platform"
   image       = "ubuntu-24.04"
-  server_type = "cx33"
+  server_type = "cx22"
   location    = "fsn1"
 
   ssh_keys = [hcloud_ssh_key.main.id]
